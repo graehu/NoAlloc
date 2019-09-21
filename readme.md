@@ -1,10 +1,38 @@
 # NoAlloc
 
-The language where you can't dynamically allocate anything and objects are managed as loaded binary blobs with pre-allocated pools of objects.
+The language where you can't dynamically allocate anything!
 
-The compiler has hooks for resources like textures(anything) which allows you to store them in the blob with a consistent language level API. Resources are first class objects in this language. (Possible misuse of language here)
+# Language Goals
 
-I'm thinking something like (Don't complain about syntax):
+* Highly memory oriented
+  * No fragmentation
+  * No leaks
+  * No corruptions
+  * Fast instatiations
+  * Stack driven
+* Resources are first class citizens
+  * Saved into the binaries
+  * Classes with functions
+
+
+# Memory Management
+ 
+Objects are managed as loaded binary blobs with pre-allocated pools of internal objects. These blobs contain everything needed to execute their code. Functions would be copy constructed onto the main program stack.
+
+When loading and unloading blobs the language is making heap allocations to seat them in. To avoid fragmentation over long periods of run time, when a blob is unloaded all blobs will need to be reseated. Meaning all pointers will need to be fixed up too.
+
+Pointers store a reference to the blobs header. On a reseat all blobs would calculate their delta displacement in memory, then store that in their headers. Next all pointers are itterated to update based on the memory delta. Finally the blob is reseated.
+
+You can mark sections of your program to be built into blobs that are loaded as `.blobs`.
+They're also a type of resource, but their API is defined by you.
+
+# Resources
+
+The compiler has extentions for Resources - `.png` being an example - which allows it to compile them into the blob with a consistent language level API. Resources are first class citizens in this language. Extentions are managed automatically by a package manager built into the compiler. The Resources introduced by extentions are types in their own right, so functionality is packed along with data.
+
+It's also possible to compile your own Resource types as blob files to extend the compiler locally.
+
+An example:
 
 ```python
 main = function():
@@ -20,13 +48,9 @@ main = function():
     pixel_count = int(texture2.get_num_pixels())
 ```
 
-Above you can see that there's no explicit type. In this case the type is `.png` and the compiler would need to have an extention/plugin installed in order to compile `.png`. These would probably be .dlls essentially and should be managed automatically by a package manager built into the compiler.
+Above you can see that there's no explicit type. In this case the type is `.png` and the compiler would need to have an extention installed in order to compile `.png`. 
 
-If you need to write your own, the compiler should be fed it with command line options.
-
-Each of the .dlls/plugins would define an API for it's resource type.
-
-LAST NOTE BEFORE I STOP
+# Syntax
 
 I want the syntax to be `thing = constructor()` in every possible case. If you try to assign a new var without using a constructor it'll fail. examples:
 
@@ -64,16 +88,12 @@ Car = Resource():
         pass
     
     cool_member = Int(0)
-    cool_array_member = Array(Int, 10)
+    cool_array_member = Pool(Int, 10)
     cool_string = String(32)
     cool_string2 = String(32, "fun constructor!")
     #not sure about this!
     cool_map_member = Map(String(32), Int, 16)
 ```
-
-You can mark sections of your program to be built into blobs that are loaded as .blobs.
-They're also a type of resource, but their API is defined by you.
-Maybe this is a higher concept than a class/container.
 
 So something like
 
@@ -88,6 +108,20 @@ main = Function():
     
 ```
 
+# Pool
+
+In this language `Pool` is a special array type. All objects and types have a `Pool` API: 
+* `.reserved_from_pool()`
+  * returns true if it's in use.
+* `.return_to_pool()`
+  * returns the object to the `Pool`.
+* `something.`
+
+The pool has a `get_pooled()` function that returns.
+
+TODO: this section is poorly defined and should actually be implemented as a reference count. But basically, the pool has `get_pooled()` and that object will be reserved UNTIL it runs out of references. At which point it will be returned to the pool to be used.
+
+TODO TODO: Reword this.
 
 # Possible Issues
 
@@ -96,20 +130,6 @@ main = Function():
 - Managing changing data/binary layouts of types
     - Especially in the resources because they're managed by plugin!
     - will need a consistent header for ALL resources that can be error checked.
-
-# Fragmentation
-
-The language should allow you to specifically unload blobs.
-When loading and unloading blobs the language is making heap allocations to seat them in.
-To avoid fragmentation over long periods of run time, when a blob is unloaded all blobs will need to be reseated.
-meaning all pointers will need to be fixed up too.
-
-So pointers would need a bit of extra weight, they'd have an understanding of what blob their data is within.
-On a reseat all blobs would calculate their delta displacement in memory, then store that in their headers.
-Next all pointers are itterated to update based on the memory delta.
-Finally the blob is reseated.
-
-Ideally pointers should be mostly invisible. 
 
 # Unfounded ideas!
 - no auto objects on the stack! i.e. my_game = Resource("my_game.blob") in function scope.
