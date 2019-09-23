@@ -26,6 +26,29 @@ Pointers store a reference to the blobs header. On a reseat all blobs would calc
 You can mark sections of your program to be built into blobs that are loaded as `.blobs`.
 They're also a type of resource, but their API is defined by you.
 
+## Pools
+
+In this language `Pool` is a special array type. Under the hood pooled objects are reference counted. Here's an example of a simple interaction:
+
+```python
+my_pool = Pool(Int, 128)
+main = Function():
+    my_1 = Int(my_pool.get_recycled()) # returns index 0
+    my_2 = Int(my_pool.get_recycled()) # returns index 1
+    my_3 = Int(my_pool.get_recycled()) # returns index 2
+    my_4 = Int(my_pool.get_recycled()) # returns index 3
+    # Now I null the pointer
+    my_1 = null
+    # I immediately get it back
+    my_5 = Int(my_pool.get_recycled()) # returns index 0
+
+```
+Internally there would be a head_index and a recycled_stack. The stack has items pushed onto it as they return to the pool. If there are no items on the recycled_stack the head_index increments and that item is returned. This approach automatically calculates the maximum needed items for any `Pool` assuming zero branch complexity.
+
+This is useful for informing the programmer that he's overallocating for any given `Pool` or if a pool is underallocating.
+
+This would be stored in contigious memory, with an upfront block allocation for the pool.
+
 # Resources
 
 The compiler has extentions for Resources - `.png` being an example - which allows it to compile them into the blob with a consistent language level API. Resources are first class citizens in this language. Extentions are managed automatically by a package manager built into the compiler. The Resources introduced by extentions are types in their own right, so functionality is packed along with data.
@@ -35,7 +58,7 @@ It's also possible to compile your own Resource types as blob files to extend th
 An example:
 
 ```python
-main = function():
+main = Function():
     # This is a declaration, with an inline construction.
     # The compiler would find this and know to compile the texture into the binary.
     # "texture" becomes a pointer to the resource.
@@ -56,7 +79,7 @@ I want the syntax to be `thing = constructor()` in every possible case. If you t
 
 
 ```python
-main = function():
+main = Function():
     # this is fine!
     texture = Resource("x:/my_art/albedo.png")
     pixel_count = int(texture.get_num_pixels())
@@ -108,20 +131,6 @@ main = Function():
     
 ```
 
-# Pool
-
-In this language `Pool` is a special array type. All objects and types have a `Pool` API: 
-* `.reserved_from_pool()`
-  * returns true if it's in use.
-* `.return_to_pool()`
-  * returns the object to the `Pool`.
-* `something.`
-
-The pool has a `get_pooled()` function that returns.
-
-TODO: this section is poorly defined and should actually be implemented as a reference count. But basically, the pool has `get_pooled()` and that object will be reserved UNTIL it runs out of references. At which point it will be returned to the pool to be used.
-
-TODO TODO: Reword this.
 
 # Possible Issues
 
@@ -142,3 +151,5 @@ my_class = Resource("something.png"):
 my_extra_args = Resource("something.png": duplicates = int(2), tint=Color(0.5,0.5,0.5)):
     #more junk!
 ```
+
+testing how fast this is. Its probably just fine for my kwyboard.
