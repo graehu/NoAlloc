@@ -49,6 +49,30 @@ This is useful for informing the programmer that he's overallocating for any giv
 
 This would be stored in contigious memory, with an upfront block allocation for the pool.
 
+# Compile Time Extension
+
+In dynamic languages it's quite common to allow members and methods to be added at runtime. For this language extension is a compile time concept. The rules are that any given type can be extended so long as it's defined within the current blob.
+
+example:
+```javascript
+
+// simple definition
+my_class = Resource():
+    pass
+
+//two legal examples
+my_class.cool_member = Int(1)
+my_class.cool_method = Function():
+    pass
+
+//not legal!!
+Resource.bad_function():
+    pass
+
+```
+
+The colon is used to signify an extension/type definition. The reason `bad_function` isn't legal is because `Resource` is a base type. You can't extend base types because they're not a part of the current blob.
+
 # Resources
 
 The compiler has extentions for Resources - `.png` being an example - which allows it to compile them into the blob with a consistent language level API. Resources are first class citizens in this language. Extentions are managed automatically by a package manager built into the compiler. The Resources introduced by extentions are types in their own right, so functionality is packed along with data.
