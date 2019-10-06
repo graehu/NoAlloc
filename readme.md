@@ -97,6 +97,11 @@ main = Function():
 
 Above you can see that there's no explicit type. In this case the type is `.png` and the compiler would need to have an extention installed in order to compile `.png`. 
 
+# C++ Interop
+
+The intention here is for .libs or .dlls to be useable from within the language. They could be treated as resources, with a translation layer. Ideally this layer would be auto generated but that may not be possible in some cases, so there should also be the option to write a "compliant wrapper" in C++ that defines functinos NoAlloc can call correctly.
+
+
 # Syntax
 
 I want the syntax to be `thing = constructor()` in every possible case. If you try to assign a new var without using a constructor it'll fail. examples:
